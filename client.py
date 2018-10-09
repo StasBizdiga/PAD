@@ -1,9 +1,10 @@
 import threading
 import socket
 
+KEEP_CONN = True
 
 def send_to_server(socket):
-    while True:
+    while KEEP_CONN:
         try:
             #send
             data = input(">>> ")
@@ -15,18 +16,27 @@ def send_to_server(socket):
     return False
     
 def receive_from_server(socket):
-    while True:
+    while KEEP_CONN:
         try:
            #receive
             data = socket.recv(1024)
             print("<<< %s" % (data.decode(),))
             if ("Closing connection".encode() in data):
+                close_connection()
                 break
             
         except:
             break   
     return False
-        
+    
+def close_connection():
+    global KEEP_CONN
+    KEEP_CONN = False
+    a.close()
+    b.close()
+    client_socket.close()
+
+    
 def start_client(address, port):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((address, port))
@@ -36,11 +46,9 @@ def start_client(address, port):
     b = threading.Thread(target = receive_from_server,args = (client_socket,))
     a.start()
     b.start()
-    while(a and b):
+    while KEEP_CONN:
         pass
-    a.close()
-    b.close()
-    client_socket.close()
+   
 
 
 if __name__ == '__main__':
