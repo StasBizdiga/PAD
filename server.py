@@ -22,7 +22,7 @@ def new_client(client,address):
                 clientlist = fncs.show(fncs.cmd_showallports) #get raddr ports
                 client.send(clientlist) #show them
             
-            # BROADCAST
+# BROADCAST
             elif (fncs.get_command(data) == fncs.cmd_send): #sending_msg()
             
                 try:
@@ -35,7 +35,7 @@ def new_client(client,address):
                     client.send(fncs.wrap(e))
                     client.send(fncs.wrap("Err: Check parameters. (ex: /send text)"))
             
-            # UNI/MULTI-CAST
+# UNI/MULTI-CAST
             elif (fncs.get_adv_command(data)[0] == fncs.cmd_send): #send:<port> 
                 destlist = fncs.get_adv_command(data) #LIST with dest ports
                 destlist.pop(0) #remove [0] i.e. root command: '/send', which is not a port/dest
@@ -47,15 +47,54 @@ def new_client(client,address):
                         for dest in destlist:
                             if str(cl.getpeername()[1])==str(dest):
                                 cl.send(fncs.send_msg(msg))
-                                
                 except Exception as e:
                     client.send(fncs.wrap(e))
                     client.send(fncs.wrap("Err: Check parameters. (ex: /send:<uid> text)"))
-    
+                                
+# PUBLISHER-SUBSCRIBER MULTI-CAST
+            elif (fncs.get_command(data) == fncs.cmd_pub): #/pub text
+                try:
+                    #full msg with sender info:
+                    msg = data.replace(fncs.get_command(data), my_port + '[pub]:')  
+                    
+                    print(fncs.pubs_subs)  
+                    for cl in fncs.client_list:                    
+                        if str(cl.getpeername()[1]) in fncs.pubs_subs[my_port]:
+                            cl.send(fncs.send_msg(msg))
+                                
+                except Exception as e:
+                    client.send(fncs.wrap(e))
+# SUBSCRIBE                
+            elif (fncs.get_adv_command(data)[0] == fncs.cmd_sub):#/sub:1234:4444:..
+                try:                             
+                    if(":" not in data): raise Exception
+                    destlist = fncs.get_adv_command(data) #LIST with ports to sub to
+                    destlist.pop(0) #remove [0] i.e. root command, which is not a port/dest
+                    for x in destlist:
+                        client.send(fncs.subscribe(x,my_port))
+                        
+                except Exception as e:
+                    client.send(fncs.wrap(e))
+                    client.send(fncs.wrap("Err: Check parameters. (ex: /sub:<uid>:<uid>..)"))
+# UNSUBSCRIBE                    
+            elif (fncs.get_adv_command(data)[0] == fncs.cmd_unsub):#/unsub:1234:4444:..
+                try:
+                    if(":" not in data): raise Exception
+                    destlist = fncs.get_adv_command(data) #LIST with ports to sub to
+                    destlist.pop(0) #remove [0] i.e. root command, which is not a port/dest
+                    for x in destlist:
+                        client.send(fncs.unsubscribe(x,my_port))
+                
+                except Exception as e:
+                    client.send(fncs.wrap(e))
+                    client.send(fncs.wrap("Err: Check parameters. (ex: /unsub:<uid>:<uid>..)"))
+                    
+            elif (data == fncs.cmd_subs):
+                client.send(fncs.show_subs(my_port))
+                
             elif (data == fncs.cmd_myport): 
                 client.send(fncs.wrap(my_port))
                 
-            
             elif (data == fncs.cmd_exit): 
                 client.send("Closing connection...\n".encode())
                 break

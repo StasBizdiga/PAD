@@ -37,7 +37,7 @@ def close_connection():
     client_socket.close()
 
     
-def start_client(address, port):
+def start_client(address='127.0.0.1', port=8000):
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((address, port))
     print("=== Connected to %s:%s" % (address, port))
