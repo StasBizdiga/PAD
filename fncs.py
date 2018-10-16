@@ -1,5 +1,5 @@
 import re
-#serverside / clientside
+#serverside - clientside
 cmd_send = "/send"
 cmd_pub = "/pub"
 cmd_sub = "/sub"
@@ -10,16 +10,21 @@ cmd_showallports = "/showall"
 cmd_myport = "/me"
 cmd_exit = "/exit"
 
+enricher = {
+'@cute':'(^_^)',
+'@sad':'(\'^\')',
+'@joy':'(\'v\')'
+} 
 def show(option):
     if option == cmd_help:
         return wrap(help_description)
     elif option == cmd_showallports:
         return wrap([c.getpeername()[1] for c in get_clients()])
-    
-
-def send_msg(word):
-    #### do more
-    return word.encode()
+ 
+def send_msg(msg):
+    for x in enricher.keys():
+        msg = msg.replace(x,enricher[x])
+    return msg.encode()
 
 def wrap(data):
     return str(data).encode()
@@ -42,7 +47,7 @@ def get_adv_command(cmd):
     return cmd.split(' ')[0].split(':') # ex: "/command:p1:p2:p3" text me
     
 def validate_command(cmd):
-    return bool((re.match('^[:/ a-zA-Z0-9]+$',cmd)) and cmd[0] == "/")
+    return bool((re.match('^[@\',.:/ a-zA-Z0-9]+$',cmd)) and cmd[0] == "/")
 
 def show_subs(port):
     try:
@@ -51,7 +56,7 @@ def show_subs(port):
             if port in pubs_subs[x]:
                 subscribed_to.append(x)
         if subscribed_to == []: raise Exception
-        else: return wrap(str(subscribed_to))
+        else: return wrap('You are subbed to: '+str(subscribed_to))
         
     except Exception as e:
         print(e)
@@ -76,7 +81,6 @@ def unsubscribe(dest,port):
     
 client_list = []
 pubs_subs = {}
-#subs_pubs = {} # for getting the list of who the user is subbed to
 help_description = \
 """
 ===============
@@ -89,10 +93,16 @@ help_description = \
 /send <text> - broadcasts the text that was sent as param
 /send:<uid>  - unicast send message to user
 /send:<uid>:<uid>:<uid>... - multicast send
+/sub:<uid>:<uid>:<uid>... - subscribe to ports
+/unsub:<uid>:<uid>:<uid>... - unsubscribe from ports
+/subs - show who you are subbed to
+/pub <text> - publish message to subscribers
 
 /exit - closes connection
 ===============
-"""
+"""+\
+"emotes:"+\
+str(enricher)
 
 
 #==============================================================================
